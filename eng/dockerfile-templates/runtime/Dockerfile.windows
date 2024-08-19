@@ -33,7 +33,7 @@ ARG SAS_QUERY_STRING
 # Retrieve .NET Runtime
 {{InsertTemplate("Dockerfile.windows.install-runtime",
     [
-        "use-local-version-var": "true",
+        "use-explicit-version": "true",
         "url-suffix": when(isInternal, "$Env:SAS_QUERY_STRING", ""),
         "is-internal": isInternal
     ])}}

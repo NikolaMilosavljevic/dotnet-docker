@@ -9,11 +9,9 @@
     set isServerCore to find(OS_VERSION, "windowsservercore") >= 0 ^
     set dotnetDir to when(isServerCore && !ARGS["is-internal"], "$Env:ProgramFiles\dotnet", "dotnet") ^
     set dotnetZipFile to "dotnet.zip" ^
-    set runtimeVersionDir to when(ARGS["use-local-version-var"],
-        "$dotnet_version",
-        when(ARGS["is-internal"],
-            VARIABLES[cat("runtime|", dotnetVersion, "|build-version")],
-            "$Env:DOTNET_VERSION")) ^
+    set runtimeVersionDir to when(ARGS["use-explicit-version"],
+        VARIABLES[cat("runtime|", dotnetVersion, "|build-version")],
+        "$Env:DOTNET_VERSION") ^
     set isInternalStableBranding to ARGS["is-internal"] &&
         (find(VARIABLES[cat("sdk|", dotnetVersion, "|build-version")], "-servicing") >= 0 ||
         find(VARIABLES[cat("sdk|", dotnetVersion, "|build-version")], "-rtm") >= 0) ^
@@ -27,8 +25,7 @@
         $ErrorActionPreference = 'Stop'; `
         $ProgressPreference = 'SilentlyContinue'; `
         `
-        {{if ARGS["use-local-version-var"]:$dotnet_version = '{{VARIABLES[cat("runtime|", dotnetVersion, "|build-version")]}}'; `
-        }}{{InsertTemplate("../Dockerfile.windows.download-file",
+        {{InsertTemplate("../Dockerfile.windows.download-file",
         [
             "out-file": dotnetZipFile,
             "url": url,
