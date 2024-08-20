@@ -6,11 +6,11 @@
 
     set dotnetVersion to join(slice(split(PRODUCT_VERSION, "."), 0, 2), ".") ^
     set isServerCore to find(OS_VERSION, "windowsservercore") >= 0 ^
-    set dotnetDir to when(isServerCore && !ARGS["is-internal"], "$Env:ProgramFiles\dotnet", "dotnet") ^
+    set dotnetDir to when(isServerCore && !ARGS["is-internal"], "%ProgramFiles%\dotnet", "dotnet") ^
     set dotnetZipFile to "dotnet.zip" ^
     set runtimeVersionDir to when(ARGS["use-explicit-version"] || ARGS["is-internal"],
         VARIABLES[cat("runtime|", dotnetVersion, "|build-version")],
-        "$Env:DOTNET_VERSION") ^
+        "%DOTNET_VERSION%") ^
     set isInternalStableBranding to ARGS["is-internal"] &&
         (find(VARIABLES[cat("sdk|", dotnetVersion, "|build-version")], "-servicing") >= 0 ||
         find(VARIABLES[cat("sdk|", dotnetVersion, "|build-version")], "-rtm") >= 0) ^
@@ -20,8 +20,7 @@
     set url to cat(
         VARIABLES[cat("base-url|", dotnetVersion, "|", VARIABLES["branch"])],
         "/Runtime/", runtimeVersionDir, "/dotnet-runtime-", runtimeVersionFile, "-win-x64.zip", ARGS["url-suffix"])
-}}RUN `
-    && {{InsertTemplate("../Dockerfile.windows.download-file",
+}}RUN {{InsertTemplate("../Dockerfile.windows.download-file",
         [
             "out-file": dotnetZipFile,
             "url": url
@@ -32,7 +31,7 @@
             "sha": VARIABLES[cat("runtime|", dotnetVersion, "|win|x64|sha")],
             "sha-var-name": "dotnet_sha512"
         ], "        ")}} `
-    && mkdir {{dotnetDir}} `
+    && mkdir "{{dotnetDir}}" `
     && {{InsertTemplate("../Dockerfile.windows.extract-zip",
             [
                 "file": dotnetZipFile,

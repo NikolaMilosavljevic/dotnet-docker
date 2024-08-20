@@ -31,10 +31,9 @@
     set getFormattedPath(path) to:{{
         return cat("'", path, "'")
     }} ^
-    set mingitDir to when(isSingleStage, "$Env:ProgramFiles\MinGit", "MinGit")
+    set mingitDir to when(isSingleStage, "%ProgramFiles%\MinGit", "MinGit")
 }}{{ if dotnetVersion != "6.0":# Download MinGit
-RUN `
-    && {{InsertTemplate("../Dockerfile.windows.download-file",
+RUN {{InsertTemplate("../Dockerfile.windows.download-file",
         [
             "out-file": "mingit.zip",
             "url": VARIABLES[cat("mingit|", dotnetVersion, "|", ARCH_SHORT, "|url")]
@@ -46,7 +45,7 @@ RUN `
             "sha-var-name": "mingit_sha256",
             "hash-algorithm": "sha256"
         ], "        ")}} `
-    && mkdir {{mingitDir}} `
+    && mkdir "{{mingitDir}}" `
     && {{InsertTemplate("../Dockerfile.windows.extract-zip",
             [
                 "file": "mingit.zip",
@@ -55,20 +54,21 @@ RUN `
     && del /F {{"mingit.zip"}}
 
 }}RUN `
-    && {{InsertTemplate("Dockerfile.windows.install-sdk",
+    # Retrieve .NET SDK
+    {{InsertTemplate("Dockerfile.windows.install-sdk",
            [
-               "use-explicit_version": "true",
+               "use-explicit-version": "true",
                "sdk-extract-groups": when(isSingleStage, sdkExtractGroups, []),
                "is-internal": ARGS["dotnet-is-internal"],
                "url-suffix": ARGS["dotnet-url-suffix"]
-           ], "        ")}} `
-       `
+           ])}} `
+    `
+    # Install PowerShell global tool
     && {{InsertTemplate("Dockerfile.windows.install-powershell",
            [
                "dotnet-is-internal": ARGS["dotnet-is-internal"]
-           ],
-           "        ")}}{{if !isSingleStage: `
-       `
+           ])}}{{if !isSingleStage: `
+    `
     && powershell -Command " `
        $ErrorActionPreference = 'Stop'; `
        $ProgressPreference = 'SilentlyContinue'; `

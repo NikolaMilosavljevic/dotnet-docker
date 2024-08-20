@@ -7,9 +7,9 @@
     set isServerCore to find(OS_VERSION, "windowsservercore") >= 0 ^
     set isNanoServer to find(OS_VERSION, "nanoserver") >= 0 ^
     set useProgramFilesDir to (isServerCore && !ARGS["is-internal"]) ^
-    set dotnetDir to when(useProgramFilesDir, "$Env:ProgramFiles\dotnet", "dotnet") ^
+    set dotnetDir to when(useProgramFilesDir, "%ProgramFiles%\dotnet", "dotnet") ^
     set aspnetCoreZipFile to "aspnetcore.zip" ^
-    set aspnetVersion to when(ARGS["use-explicit-version"], VARIABLES[cat("aspnet|", dotnetVersion, "|build-version")], "$Env:ASPNET_VERSION") ^
+    set aspnetVersion to when(ARGS["use-explicit-version"], VARIABLES[cat("aspnet|", dotnetVersion, "|build-version")], "%ASPNET_VERSION%") ^
     set isInternalStableBranding to ARGS["is-internal"] &&
         (find(VARIABLES[cat("sdk|", dotnetVersion, "|build-version")], "-servicing") >= 0 ||
         find(VARIABLES[cat("sdk|", dotnetVersion, "|build-version")], "-rtm") >= 0) ^
@@ -20,8 +20,7 @@
         VARIABLES[cat("base-url|", dotnetVersion, "|", VARIABLES["branch"])],
         "/aspnetcore/Runtime/", aspnetVersion, "/aspnetcore-runtime-", aspnetVersionFile, "-win-x64.zip", ARGS["url-suffix"])
 }}# Install ASP.NET Core Runtime
-RUN `
-    && {{InsertTemplate("../Dockerfile.windows.download-file",
+RUN {{InsertTemplate("../Dockerfile.windows.download-file",
         [
             "out-file": aspnetCoreZipFile,
             "url": url
@@ -32,7 +31,7 @@ RUN `
             "sha": VARIABLES[cat("aspnet|", dotnetVersion, "|win|x64|sha")],
             "sha-var-name": "aspnetcore_sha512"
         ], "        ")}} `
-    {{if !useProgramFilesDir:&& mkdir {{dotnetDir}}/shared/Microsoft.AspNetCore.App}} `
+    {{if !useProgramFilesDir:&& mkdir "{{dotnetDir}}\shared\Microsoft.AspNetCore.App"}} `
     && {{InsertTemplate("../Dockerfile.windows.extract-zip",
             [
                 "file": aspnetCoreZipFile,

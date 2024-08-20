@@ -4,23 +4,22 @@
 
     set dotnetVersion to join(slice(split(PRODUCT_VERSION, "."), 0, 2), ".") ^
     set isNanoServer to find(OS_VERSION, "nanoserver") >= 0 ^
-    set rootDir to when(isNanoServer || ARGS["dotnet-is-internal"], "\", "$Env:ProgramFiles\") ^
-    set nupkgFile to "PowerShell.Windows.x64.$powershell_version.nupkg" ^
-    set url to cat("https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/$powershell_version/", nupkgFile) ^
-    set powershellVersion to VARIABLES[cat("powershell|", dotnetVersion, "|build-version")]
-}}# Install PowerShell global tool
-    && {{InsertTemplate("../Dockerfile.windows.download-file",
+    set rootDir to when(isNanoServer || ARGS["dotnet-is-internal"], "\", "%ProgramFiles%\") ^
+    set powershellVersion to VARIABLES[cat("powershell|", dotnetVersion, "|build-version")] ^
+    set nupkgFile to cat("PowerShell.Windows.x64.", powershellVersion, ".nupkg") ^
+    set url to cat("https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/", powershellVersion, "/", nupkgFile)
+}}{{InsertTemplate("../Dockerfile.windows.download-file",
         [
             "out-file": nupkgFile,
             "url": url
-        ],)}}; `
+        ],)}} `
     && {{InsertTemplate("../Dockerfile.windows.verify.file.checksum",
         [
             "out-file": nupkgFile,
             "sha": VARIABLES[cat("powershell|", dotnetVersion, "|Windows|x64|sha")],
             "sha-var-name": "powershell_sha512"
         ], "        ")}} `
-    && {{rootDir}}dotnet\dotnet tool install --add-source . --tool-path {{rootDir}}powershell --version {{powershellVersion}} PowerShell.Windows.x64; `
-    && {{rootDir}}dotnet\dotnet nuget locals all --clear; `
+    && "{{rootDir}}dotnet\dotnet" tool install --add-source . --tool-path "{{rootDir}}powershell" --version {{powershellVersion}} PowerShell.Windows.x64 `
+    && "{{rootDir}}dotnet\dotnet" nuget locals all --clear `
     && del /F {{nupkgFile}} `
-    && del /F {{rootDir}}powershell\.store\powershell.windows.x64\{{powershellVersion}}\powershell.windows.x64\{{powershellVersion}}\{{lcase(nupkgFile)}} `
+    && del /F "{{rootDir}}powershell\.store\powershell.windows.x64\{{powershellVersion}}\powershell.windows.x64\{{powershellVersion}}\{{lcase(nupkgFile)}}" 
