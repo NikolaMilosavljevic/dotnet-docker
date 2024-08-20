@@ -9,15 +9,18 @@
     set url to cat("https://powershellinfraartifacts-gkhedzdeaghdezhr.z01.azurefd.net/tool/$powershell_version/", nupkgFile) ^
     set powershellVersion to VARIABLES[cat("powershell|", dotnetVersion, "|build-version")]
 }}# Install PowerShell global tool
-$powershell_version = '{{VARIABLES[cat("powershell|", dotnetVersion, "|build-version")]}}'; `
-{{InsertTemplate("../Dockerfile.windows.download-file",
+    && {{InsertTemplate("../Dockerfile.windows.download-file",
         [
             "out-file": nupkgFile,
-            "url": url,
+            "url": url
+        ],)}}; `
+    && {{InsertTemplate("../Dockerfile.windows.verify.file.checksum",
+        [
+            "out-file": nupkgFile,
             "sha": VARIABLES[cat("powershell|", dotnetVersion, "|Windows|x64|sha")],
             "sha-var-name": "powershell_sha512"
-        ],)}}; `
-& {{rootDir}}dotnet\dotnet tool install --add-source . --tool-path {{rootDir}}powershell --version $powershell_version PowerShell.Windows.x64; `
-& {{rootDir}}dotnet\dotnet nuget locals all --clear; `
-Remove-Item -Force {{nupkgFile}}; `
-Remove-Item -Path {{rootDir}}powershell\.store\powershell.windows.x64\$powershell_version\powershell.windows.x64\$powershell_version\{{lcase(nupkgFile)}} -Force;
+        ], "        ")}} `
+    && {{rootDir}}dotnet\dotnet tool install --add-source . --tool-path {{rootDir}}powershell --version {{powershellVersion}} PowerShell.Windows.x64; `
+    && {{rootDir}}dotnet\dotnet nuget locals all --clear; `
+    && del /F {{nupkgFile}} `
+    && del /F {{rootDir}}powershell\.store\powershell.windows.x64\{{powershellVersion}}\powershell.windows.x64\{{powershellVersion}}\{{lcase(nupkgFile)}} `

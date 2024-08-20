@@ -33,45 +33,46 @@
     }} ^
     set mingitDir to when(isSingleStage, "$Env:ProgramFiles\MinGit", "MinGit")
 }}{{ if dotnetVersion != "6.0":# Download MinGit
-RUN powershell -Command " `
-        $ErrorActionPreference = 'Stop'; `
-        $ProgressPreference = 'SilentlyContinue'; `
-        `
-        {{InsertTemplate("../Dockerfile.windows.download-file",
-            [
-                "out-file": "mingit.zip",
-                "url": VARIABLES[cat("mingit|", dotnetVersion, "|", ARCH_SHORT, "|url")],
-                "sha": VARIABLES[cat("mingit|", dotnetVersion, "|", ARCH_SHORT, "|sha")],
-                "sha-var-name": "mingit_sha256",
-                "hash-algorithm": "sha256"
-            ], "        ")}}; `
-        mkdir {{ mingitDir }}; `
-        {{InsertTemplate("../Dockerfile.windows.extract-zip",
+RUN `
+    && {{InsertTemplate("../Dockerfile.windows.download-file",
+        [
+            "out-file": "mingit.zip",
+            "url": VARIABLES[cat("mingit|", dotnetVersion, "|", ARCH_SHORT, "|url")]
+        ], "        ")}} `
+    && {{InsertTemplate("../Dockerfile.windows.verify.file.checksum",
+        [
+            "out-file": "mingit.zip",
+            "sha": VARIABLES[cat("mingit|", dotnetVersion, "|", ARCH_SHORT, "|sha")],
+            "sha-var-name": "mingit_sha256",
+            "hash-algorithm": "sha256"
+        ], "        ")}} `
+    && mkdir {{mingitDir}} `
+    && {{InsertTemplate("../Dockerfile.windows.extract-zip",
             [
                 "file": "mingit.zip",
                 "dest-dir": mingitDir
-            ], "        ")}}"
-
-}}RUN powershell -Command " `
-        $ErrorActionPreference = 'Stop'; `
-        $ProgressPreference = 'SilentlyContinue'; `
-        `
-        # Retrieve .NET SDK
-        {{InsertTemplate("Dockerfile.windows.install-sdk",
-            [
-                "use-local-version-var": ARGS["use-local-version-var"],
-                "sdk-extract-groups": when(isSingleStage, sdkExtractGroups, []),
-                "is-internal": ARGS["dotnet-is-internal"],
-                "url-suffix": ARGS["dotnet-url-suffix"]
             ], "        ")}} `
-        `
-        {{InsertTemplate("Dockerfile.windows.install-powershell",
-            [
-                "dotnet-is-internal": ARGS["dotnet-is-internal"]
-            ],
-            "        ")}}{{if !isSingleStage: `
-        `
-        # Delete everything in the dotnet folder that's not needed in the SDK layer but will instead be derived from base layers{{
-for i, group in sdkExtractGroups:
-        Get-ChildItem -Exclude {{join(map(group.paths, getFormattedPath), ",")}} -Path {{group.dir}} `
-            | Remove-Item -Force -Recurse{{if i < len(group.paths) - 1:; `}}}}}}"
+    && del /F {{"mingit.zip"}}
+
+}}RUN `
+    && {{InsertTemplate("Dockerfile.windows.install-sdk",
+           [
+               "use-explicit_version": "true",
+               "sdk-extract-groups": when(isSingleStage, sdkExtractGroups, []),
+               "is-internal": ARGS["dotnet-is-internal"],
+               "url-suffix": ARGS["dotnet-url-suffix"]
+           ], "        ")}} `
+       `
+    && {{InsertTemplate("Dockerfile.windows.install-powershell",
+           [
+               "dotnet-is-internal": ARGS["dotnet-is-internal"]
+           ],
+           "        ")}}{{if !isSingleStage: `
+       `
+    && powershell -Command " `
+       $ErrorActionPreference = 'Stop'; `
+       $ProgressPreference = 'SilentlyContinue'; `
+       # Delete everything in the dotnet folder that's not needed in the SDK layer but will instead be derived from base layers{{
+       for i, group in sdkExtractGroups:
+           Get-ChildItem -Exclude {{join(map(group.paths, getFormattedPath), ",")}} -Path {{group.dir}} `
+           | Remove-Item -Force -Recurse{{if i < len(group.paths) - 1:; `}}}}}}"
