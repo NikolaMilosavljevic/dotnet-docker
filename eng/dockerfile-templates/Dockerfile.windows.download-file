@@ -4,4 +4,4 @@
     ARGS:
         out-file: name of the output file
         url: URL to download
-}}curl -o {{ARGS["out-file"]}} {{ARGS["url"]}}
+}}curl -L -o {{ARGS["out-file"]}} {{ARGS["url"]}}

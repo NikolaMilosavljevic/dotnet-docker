@@ -33,7 +33,8 @@
     }} ^
     set mingitDir to when(isSingleStage, "%ProgramFiles%\MinGit", "MinGit")
 }}{{ if dotnetVersion != "6.0":# Download MinGit
-RUN {{InsertTemplate("../Dockerfile.windows.download-file",
+RUN `
+    {{InsertTemplate("../Dockerfile.windows.download-file",
         [
             "out-file": "mingit.zip",
             "url": VARIABLES[cat("mingit|", dotnetVersion, "|", ARCH_SHORT, "|url")]
