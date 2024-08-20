@@ -1,7 +1,6 @@
 {{
     _ ARGS:
-        - use-local-version-var (optional): Whether to define a local variable for the ASP.NET Core runtime version
-            instead of referencing the environment variable.
+        - use-explicit-version (optional): Whether to use explicit version insted of referencing the environment variable.
         - url-suffix (optional): Suffix string to append the end of the URL.
         - is-internal (optional): Whether the Dockerfile is targeting an internal build of the product. ^
 
@@ -9,7 +8,7 @@
     set isServerCore to find(OS_VERSION, "windowsservercore") >= 0 ^
     set dotnetDir to when(isServerCore && !ARGS["is-internal"], "$Env:ProgramFiles\dotnet", "dotnet") ^
     set dotnetZipFile to "dotnet.zip" ^
-    set runtimeVersionDir to when(ARGS["use-explicit-version"],
+    set runtimeVersionDir to when(ARGS["use-explicit-version"] || ARGS["is-internal"],
         VARIABLES[cat("runtime|", dotnetVersion, "|build-version")],
         "$Env:DOTNET_VERSION") ^
     set isInternalStableBranding to ARGS["is-internal"] &&
@@ -21,21 +20,22 @@
     set url to cat(
         VARIABLES[cat("base-url|", dotnetVersion, "|", VARIABLES["branch"])],
         "/Runtime/", runtimeVersionDir, "/dotnet-runtime-", runtimeVersionFile, "-win-x64.zip", ARGS["url-suffix"])
-}}RUN powershell -Command `
-        $ErrorActionPreference = 'Stop'; `
-        $ProgressPreference = 'SilentlyContinue'; `
-        `
-        {{InsertTemplate("../Dockerfile.windows.download-file",
+}}RUN `
+    && {{InsertTemplate("../Dockerfile.windows.download-file",
         [
             "out-file": dotnetZipFile,
-            "url": url,
+            "url": url
+        ], "        ")}} `
+    && {{InsertTemplate("../Dockerfile.windows.verify.file.checksum",
+        [
+            "out-file": dotnetZipFile,
             "sha": VARIABLES[cat("runtime|", dotnetVersion, "|win|x64|sha")],
             "sha-var-name": "dotnet_sha512"
-        ], "        ")}}; `
-        `
-        mkdir {{dotnetDir}}; `
-        {{InsertTemplate("../Dockerfile.windows.extract-zip",
+        ], "        ")}} `
+    && mkdir {{dotnetDir}} `
+    && {{InsertTemplate("../Dockerfile.windows.extract-zip",
             [
                 "file": dotnetZipFile,
                 "dest-dir": dotnetDir
-            ], "        ")}}
+            ], "        ")}} `
+    && del /F {{dotnetZipFile}}

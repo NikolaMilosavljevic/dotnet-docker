@@ -1,7 +1,5 @@
 {{
     _ ARGS:
-        - use-local-version-var (optional): Whether to define a local variable for the ASP.NET Core runtime version
-            instead of referencing the environment variable.
         - url-suffix (optional): Suffix string to append the end of the URL.
         - is-internal (optional): Whether the Dockerfile is targeting an internal build of the product. ^
 
@@ -11,7 +9,7 @@
     set useProgramFilesDir to (isServerCore && !ARGS["is-internal"]) ^
     set dotnetDir to when(useProgramFilesDir, "$Env:ProgramFiles\dotnet", "dotnet") ^
     set aspnetCoreZipFile to "aspnetcore.zip" ^
-    set aspnetVersion to when(ARGS["use-local-version-var"], "$aspnetcore_version", "$Env:ASPNET_VERSION") ^
+    set aspnetVersion to when(ARGS["use-explicit-version"], VARIABLES[cat("aspnet|", dotnetVersion, "|build-version")], "$Env:ASPNET_VERSION") ^
     set isInternalStableBranding to ARGS["is-internal"] &&
         (find(VARIABLES[cat("sdk|", dotnetVersion, "|build-version")], "-servicing") >= 0 ||
         find(VARIABLES[cat("sdk|", dotnetVersion, "|build-version")], "-rtm") >= 0) ^
@@ -22,25 +20,25 @@
         VARIABLES[cat("base-url|", dotnetVersion, "|", VARIABLES["branch"])],
         "/aspnetcore/Runtime/", aspnetVersion, "/aspnetcore-runtime-", aspnetVersionFile, "-win-x64.zip", ARGS["url-suffix"])
 }}# Install ASP.NET Core Runtime
-RUN powershell -Command `
-        $ErrorActionPreference = 'Stop'; `
-        $ProgressPreference = 'SilentlyContinue'; `
-        `
-        {{if ARGS["use-local-version-var"]:$aspnetcore_version = '{{VARIABLES[cat("aspnet|", dotnetVersion, "|build-version")]}}'; `
-        }}{{InsertTemplate("../Dockerfile.windows.download-file",
+RUN `
+    && {{InsertTemplate("../Dockerfile.windows.download-file",
         [
             "out-file": aspnetCoreZipFile,
-            "url": url,
+            "url": url
+        ], "        ")}} `
+    && {{InsertTemplate("../Dockerfile.windows.verify.file.checksum",
+        [
+            "out-file": aspnetCoreZipFile,
             "sha": VARIABLES[cat("aspnet|", dotnetVersion, "|win|x64|sha")],
             "sha-var-name": "aspnetcore_sha512"
-        ], "        ")}}; `
-        `
-        {{if !useProgramFilesDir:mkdir {{dotnetDir}}/shared/Microsoft.AspNetCore.App; `
-        }}{{InsertTemplate("../Dockerfile.windows.extract-zip",
+        ], "        ")}} `
+    {{if !useProgramFilesDir:&& mkdir {{dotnetDir}}/shared/Microsoft.AspNetCore.App}} `
+    && {{InsertTemplate("../Dockerfile.windows.extract-zip",
             [
                 "file": aspnetCoreZipFile,
-                "dest-dir": dotnetDir,
+                "dest-dir": dotnetDir
                 "extract-paths": [
                     "./shared/Microsoft.AspNetCore.App"
                 ]
-            ], "        ")}}
+            ], "        ")}} `
+    && del /F {{aspnetCoreZipFile}}
