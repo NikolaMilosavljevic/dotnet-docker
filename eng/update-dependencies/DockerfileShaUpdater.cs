@@ -116,10 +116,13 @@ namespace Dotnet.Docker
                     return (JObject)variables;
                 });
 
-            s_httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
-                "Basic",
-                Convert.ToBase64String(Encoding.ASCII.GetBytes(string.Format("{0}:{1}", "",
-                    _options.ChecksumPat))));
+            if (!string.IsNullOrEmpty(_options.InternalPat))
+            {
+                s_httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
+                    "Basic",
+                    Convert.ToBase64String(Encoding.ASCII.GetBytes(string.Format("{0}:{1}", "",
+                        _options.InternalPat))));
+            }
         }
 
         private string GetRpmArchFormat() => _arch == "arm64" ? "aarch64" : "$ARCH";
