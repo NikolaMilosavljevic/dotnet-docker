@@ -35,7 +35,11 @@ param(
 
     # PAT used to access the versions repo in AzDO
     [string]
-    $AzdoVersionsRepoInfoAccessToken
+    $AzdoVersionsRepoInfoAccessToken,
+
+    # PAT used to access internal AzDO build artifacts
+    [string]
+    $InternalArtifactsAccessToken
 )
 
 Import-Module -force $PSScriptRoot/DependencyManagement.psm1
@@ -177,6 +181,33 @@ function GetVersionInfoFromBuildId([string]$buildId) {
     }
 }
 
+function GetInternalBaseUrl() {
+    $base64AccessToken = [System.Convert]::ToBase64String([System.Text.Encoding]::ASCII.GetBytes(":$InternalArtifactsAccessToken"))
+    $headers = @{
+        "Authorization" = "Basic $base64AccessToken"
+    }
+
+    $artifactsUrl = "https://dev.azure.com/dnceng/internal/_apis/build/builds/$BuildId/artifacts?api-version=6.0"
+    $response = Invoke-RestMethod -Uri $artifactsUrl -Method Get -Headers $headers
+
+    $shippingUrl = $null
+    $artifactName = 'shipping'
+    foreach ($artifact in $response.value) {
+        if ($artifact.name -eq $artifactName) {
+            $shippingUrl = $artifact.resource.downloadUrl
+            break
+        }
+    }
+
+    if ($shippingUrl -eq $null) {
+        Write-Error "Artifact '$artifactName' not found in build# $BuildId"
+        exit 1
+    }
+
+    # Format artifact URL into base-url
+    return $shippingUrl.Replace("content?format=zip", "content?format=file&subPath=%2Fassets")
+}
+
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 Set-StrictMode -Version 2.0
@@ -187,6 +218,16 @@ if ($UseInternalBuild) {
     if ($Channel)
     {
         $Channel = "internal/$Channel"
+    }
+
+    if ($BuildId) {
+        if ($InternalArtifactsAccessToken) {
+            $internalBaseUrl = GetInternalBaseUrl
+        }
+        else {
+            Write-Error "'InternalArtifactsAccessToken' parameter is required for obtaining internal base-url, when specifying 'BuildId' option"
+            exit 1
+        }
     }
 
     $queryString = "$BlobStorageSasQueryString"
@@ -255,6 +296,13 @@ foreach ($sdkVersionInfo in $SdkVersionInfos) {
 
 if ($UpdateDependencies)
 {
+    $additionalArgs = @{}
+
+    if ($internalBaseUrl -and $InternalArtifactsAccessToken) {
+        $additionalArgs += @{ InternalBaseUrl = "$internalBaseUrl" }
+        $additionalArgs += @{ InternalPat = "$InternalArtifactsAccessToken" }
+    }
+
     foreach ($versionInfo in $versionInfos) {
         Write-Host "Dockerfile version: $($versionInfo.DockerfileVersion)"
         Write-Host "SDK version: $($versionInfo.SdkVersion)"
@@ -268,6 +316,7 @@ if ($UpdateDependencies)
             -RuntimeVersion $versionInfo.RuntimeVersion `
             -AspnetVersion $versionInfo.AspnetVersion `
             -SdkVersion $versionInfo.SdkVersion `
+            @additionalArgs
 
         Write-Host "`r`nDone: Updates for .NET $($versionInfo.RuntimeVersion)/$($versionInfo.SdkVersion)`r`n"
     }
