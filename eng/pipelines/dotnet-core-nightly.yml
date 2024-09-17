@@ -27,7 +27,20 @@ extends:
   template: /eng/common/templates/1es-official.yml@self
   parameters:
     stages:
-    - template: /eng/pipelines/stages/build-test-publish-repo.yml@self
-      parameters:
-        internalProjectName: ${{ variables.internalProjectName }}
-        publicProjectName: ${{ variables.publicProjectName }}
+    - stage: Generate_Build_and_Test
+      displayName: Generate Build and Test
+      jobs:
+      - job: Update_Dockerfiles
+        displayName: Update dockerfiles
+        pool:
+          name: NetCore1ESPool-Internal
+          image: 1es-windows-2022
+          os: windows
+        steps:
+        - pwsh: >
+            ./eng/Get-DropVersions.ps1
+            -BuildId 2525144
+            -InternalArtifactsAccessToken $(System.AccessToken)
+            -updatedependencies
+            -UseInternalBuild
+          displayName: Update dockerfiles
