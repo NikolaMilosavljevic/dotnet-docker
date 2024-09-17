@@ -5,7 +5,7 @@
     set isAzureLinux to isMariner || find(OS_VERSION, "azurelinux") >= 0 ^
     set isFullAzureLinux to defined(match(OS_VERSION, "^cbl-mariner\d+\.\d+$")) ^
     set baseUrl to VARIABLES[cat("base-url|", dotnetVersion, "|", VARIABLES["branch"])] ^
-    set isInternal to find(baseUrl, "msrc") >= 0 || find(baseUrl, "internal") >= 0 ^
+    set isInternal to find(baseUrl, "content?format=file&subPath") >= 0 ^
     set isRpmInstall to isFullAzureLinux && dotnetVersion = "6.0" ^
     set tagVersion to when(dotnetVersion = "6.0" || dotnetVersion = "8.0",
         VARIABLES[cat("dotnet|", dotnetVersion, "|product-version")]
@@ -78,7 +78,7 @@
 {{if isInternal || useNobleArm32Workaround:# Installer image
 FROM {{internalInstallerBase}} AS installer{{if isInternal:
 
-ARG SAS_QUERY_STRING}}
+ARG ACCESSTOKEN}}
 {{if isFullAzureLinux && !isRpmInstall:
 RUN {{InsertTemplate("../Dockerfile.linux.install-pkgs",
     [
@@ -89,7 +89,6 @@ RUN {{InsertTemplate("../Dockerfile.linux.install-pkgs",
     [
         "install-method": when(isRpmInstall, "download", "download-and-install"),
         "is-internal": isInternal,
-        "url-suffix": when(isInternal, "$SAS_QUERY_STRING", ""),
         "is-rpm-install": isRpmInstall,
         "disable-first-run-experience": useNobleArm32Workaround,
         "no-version-env-var": useNobleArm32Workaround
@@ -111,7 +110,6 @@ if isRpmInstall:{{InsertTemplate("Dockerfile.linux.install-sdk",
     [
         "install-method": "copy-and-install",
         "is-internal": isInternal,
-        "url-suffix": "$SAS_QUERY_STRING",
         "installer-stage": "installer",
         "is-rpm-install": isRpmInstall
     ])}}^
