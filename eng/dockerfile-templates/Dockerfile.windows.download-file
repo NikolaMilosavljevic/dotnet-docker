@@ -10,11 +10,11 @@
 
     set isInternal to find(ARGS["url"], "content?format=file&subPath") >= 0 ^
     set hashAlgorithm to when(ARGS["hash-algorithm"], ARGS["hash-algorithm"], "sha512")
-}}{{if isInternal:
+}}{{if isInternal:`
 $Base64AuthInfo = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(\":$($Env:ACCESSTOKEN)\")); `
 $Headers = @@{Authorization = \"Basic $Base64AuthInfo\"}; `
-Invoke-WebRequest -OutFile {{ARGS["out-file"]}} {{ARGS["url"]}} -Headers $Headers; `
-^else:Invoke-WebRequest -OutFile {{ARGS["out-file"]}} {{ARGS["url"]}}; `}}
+Invoke-WebRequest -OutFile {{ARGS["out-file"]}} \"{{ARGS["url"]}}\" -Headers $Headers; `
+`^else:Invoke-WebRequest -OutFile {{ARGS["out-file"]}} {{ARGS["url"]}}; `}}
 ${{ARGS["sha-var-name"]}} = '{{ARGS["sha"]}}'; `
 if ((Get-FileHash {{ARGS["out-file"]}} -Algorithm {{hashAlgorithm}}).Hash -ne ${{ARGS["sha-var-name"]}}) { `
     Write-Host 'CHECKSUM VERIFICATION FAILED!'; `
