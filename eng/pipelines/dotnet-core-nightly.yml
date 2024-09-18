@@ -22,15 +22,20 @@ stages:
     pool:
       vmImage: $(defaultLinuxAmd64PoolImage)
     steps:
+    - template: /eng/common/templates/steps/init-docker-linux.yml@self
+      parameters:
+        setupImageBuilder: false
+        setupTestRunner: true
+        cleanupDocker: true
     - template: /eng/common/templates/steps/run-pwsh-with-auth.yml@self
       parameters:
-        displayName: AZ login
+        displayName: Update dockerfiles
         serviceConnection: $(test.serviceConnectionName)
         command: >
           $azLoginArgs = '--service-principal --tenant $env:AZURE_TENANT_ID -u $env:AZURE_CLIENT_ID --federated-token $env:AZURE_FEDERATED_TOKEN';
           docker exec -e AZURE_TENANT_ID=$env:tenantId -e AZURE_CLIENT_ID=$env:servicePrincipalId -e AZURE_FEDERATED_TOKEN=$env:idToken $(testRunner.container) pwsh
           -File $(engCommonRelativePath)/Invoke-WithRetry.ps1
-          "az login $azLoginArgs; az acr login -n $(acr-staging.server)"
+          "az login $azLoginArgs"
     - powershell: |
         $args = @{
           BuildId = "2525144"
@@ -40,5 +45,6 @@ stages:
         $args["updatedependencies"] = $true
         $args["UseInternalBuild"] = $true
 
-        $(engPath)/Get-DropVersions.ps1 @args
+        $(engPath)/Get-DropVersions.ps1
+        "
       displayName: Update dockerfiles
