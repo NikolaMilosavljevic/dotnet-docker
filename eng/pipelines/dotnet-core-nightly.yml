@@ -32,17 +32,12 @@ stages:
         displayName: Azure login
         serviceConnection: $(test.serviceConnectionName)
         command: >
-          $azLoginArgs = '--service-principal --tenant $env:tenantId -u $env:servicePrincipalId --federated-token $env:idToken';
-          $(engCommonRelativePath)/Invoke-WithRetry.ps1
-          "az login $azLoginArgs"
-    - powershell: |
-        $args = @{
-          BuildId = "2525144"
-        }
-
-        $args["InternalArtifactsAccessToken"] = "$(System.AccessToken)"
-        $args["updatedependencies"] = $true
-        $args["UseInternalBuild"] = $true
-
-        $(engPath)/Get-DropVersions.ps1 @args
+          az login --service-principal --tenant $env:tenantId -u $env:servicePrincipalId --federated-token $env:idToken
+    - powershell: >
+        pwsh
+        -Command "./eng/Get-DropVersions.ps1
+        -BuildId 2525144
+        -InternalArtifactsAccessToken $(System.AccessToken)
+        -updatedependencies
+        -UseInternalBuild"
       displayName: Update dependencies and dockerfiles
