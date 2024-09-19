@@ -29,15 +29,8 @@ stages:
         cleanupDocker: true
     - template: /eng/common/templates/steps/run-pwsh-with-auth.yml@self
       parameters:
-        displayName: Azure login
+        displayName: Update dependencies and generate dockerfiles
         serviceConnection: $(test.serviceConnectionName)
         command: >
-          az login --service-principal --tenant $env:tenantId -u $env:servicePrincipalId --federated-token $env:idToken
-    - powershell: >
-        pwsh
-        -Command "./eng/Get-DropVersions.ps1
-        -BuildId 2525144
-        -InternalArtifactsAccessToken $(System.AccessToken)
-        -updatedependencies
-        -UseInternalBuild"
-      displayName: Update dependencies and dockerfiles
+          az login --service-principal --tenant $env:tenantId -u $env:servicePrincipalId --federated-token $env:idToken;
+          ./eng/Get-DropVersions.ps1 -BuildId 2525144 -InternalArtifactsAccessToken $(System.AccessToken) -updatedependencies -UseInternalBuild;
