@@ -32,7 +32,7 @@ stages:
         displayName: Update dockerfiles
         serviceConnection: $(test.serviceConnectionName)
         command: >
-          $azLoginArgs = '--service-principal --tenant $env:AZURE_TENANT_ID -u $env:AZURE_CLIENT_ID --federated-token $env:AZURE_FEDERATED_TOKEN';
+          $azLoginArgs = '--service-principal --tenant $env:tenantId -u $env:servicePrincipalId --federated-token $env:idToken';
           $(engCommonRelativePath)/Invoke-WithRetry.ps1
           "az login $azLoginArgs"
     - powershell: |
