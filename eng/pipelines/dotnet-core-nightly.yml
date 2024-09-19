@@ -29,7 +29,7 @@ stages:
         cleanupDocker: true
     - template: /eng/common/templates/steps/run-pwsh-with-auth.yml@self
       parameters:
-        displayName: Update dockerfiles
+        displayName: Azure login
         serviceConnection: $(test.serviceConnectionName)
         command: >
           $azLoginArgs = '--service-principal --tenant $env:tenantId -u $env:servicePrincipalId --federated-token $env:idToken';
@@ -44,6 +44,5 @@ stages:
         $args["updatedependencies"] = $true
         $args["UseInternalBuild"] = $true
 
-        $(engPath)/Get-DropVersions.ps1
-        "
-      displayName: Update dockerfiles
+        $(engPath)/Get-DropVersions.ps1 @args
+      displayName: Update dependencies and dockerfiles
