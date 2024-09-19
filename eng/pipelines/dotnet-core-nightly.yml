@@ -38,9 +38,10 @@ extends:
           os: windows
         steps:
         - powershell: >
-            ./eng/Get-DropVersions.ps1
+            pwsh
+            -Command "./eng/Get-DropVersions.ps1
             -BuildId 2525144
             -InternalArtifactsAccessToken $(System.AccessToken)
             -updatedependencies
-            -UseInternalBuild
+            -UseInternalBuild"
           displayName: Update dependencies and generate dockerfiles
