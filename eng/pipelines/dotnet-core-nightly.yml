@@ -45,3 +45,6 @@ extends:
             -updatedependencies
             -UseInternalBuild"
           displayName: Update dependencies and generate dockerfiles
+        - powershell: >
+            cat .\src\runtime\9.0\nanoserver-ltsc2022\amd64\Dockerfile
+          displayName: Print sample dockerfile
