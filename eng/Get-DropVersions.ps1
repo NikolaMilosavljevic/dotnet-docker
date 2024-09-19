@@ -154,10 +154,21 @@ function GetDependencyVersion([string]$dependencyName, [xml]$versionDetails) {
 }
 
 function GetVersionInfoFromBuildId([string]$buildId) {
-    $configPath = Join-Path $tempDir "config.json"
+    $configFilename = "config.json"
+    $configPath = Join-Path $tempDir $configFilename
 
     try {
-        az pipelines runs artifact download --organization https://dev.azure.com/dnceng/ --project internal --run-id $buildId --path $tempDir --artifact-name drop
+        New-Item -Path $tempDir -ItemType Directory -Force | Out-Null
+
+        $base64AccessToken = [System.Convert]::ToBase64String([System.Text.Encoding]::ASCII.GetBytes(":$InternalArtifactsAccessToken"))
+        $headers = @{
+            "Authorization" = "Basic $base64AccessToken"
+        }
+
+        $url = GetArtifactUrl 'drop'
+        $url = $url.Replace("content?format=zip", "content?format=file&subPath=%2F$configFilename")
+
+        Invoke-WebRequest -OutFile $configPath $url -Headers $headers
 
         $config = $(Get-Content -Path $configPath | Out-String) | ConvertFrom-Json
 
@@ -181,7 +192,7 @@ function GetVersionInfoFromBuildId([string]$buildId) {
     }
 }
 
-function GetInternalBaseUrl() {
+function GetArtifactUrl([string]$artifactName) {
     $base64AccessToken = [System.Convert]::ToBase64String([System.Text.Encoding]::ASCII.GetBytes(":$InternalArtifactsAccessToken"))
     $headers = @{
         "Authorization" = "Basic $base64AccessToken"
@@ -190,19 +201,24 @@ function GetInternalBaseUrl() {
     $artifactsUrl = "https://dev.azure.com/dnceng/internal/_apis/build/builds/$BuildId/artifacts?api-version=6.0"
     $response = Invoke-RestMethod -Uri $artifactsUrl -Method Get -Headers $headers
 
-    $shippingUrl = $null
-    $artifactName = 'shipping'
+    $url = $null
     foreach ($artifact in $response.value) {
         if ($artifact.name -eq $artifactName) {
-            $shippingUrl = $artifact.resource.downloadUrl
+            $url = $artifact.resource.downloadUrl
             break
         }
     }
 
-    if ($shippingUrl -eq $null) {
-        Write-Error "Artifact '$artifactName' not found in build# $BuildId"
+    if ($url -eq $null) {
+        Write-Error "Artifact '$artifactName' was not found in build# $BuildId"
         exit 1
     }
+
+    return $url
+}
+
+function GetInternalBaseUrl() {
+    $shippingUrl = GetArtifactUrl 'shipping'
 
     # Format artifact URL into base-url
     return $shippingUrl.Replace("content?format=zip", "content?format=file&subPath=%2Fassets")

@@ -10,27 +10,37 @@ trigger:
     - src/*
 pr: none
 
-variables:
-- template: ../common/templates/variables/dotnet/common.yml
+resources:
+  repositories:
+  - repository: InternalVersionsRepo
+    type: github
+    endpoint: dotnet
+    name: dotnet/versions
 
-stages:
-- stage: Generate_Build_and_Test
-  displayName: Generate Build and Test
-  jobs:
-  - job: Update_Dockerfiles
-    displayName: Update dockerfiles
-    pool:
-      vmImage: $(defaultLinuxAmd64PoolImage)
-    steps:
-    - template: /eng/common/templates/steps/init-docker-linux.yml@self
-      parameters:
-        setupImageBuilder: false
-        setupTestRunner: true
-        cleanupDocker: true
-    - template: /eng/common/templates/steps/run-pwsh-with-auth.yml@self
-      parameters:
-        displayName: Update dependencies and generate dockerfiles
-        serviceConnection: $(test.serviceConnectionName)
-        command: >
-          az login --service-principal --tenant $env:tenantId -u $env:servicePrincipalId --federated-token $env:idToken;
-          ./eng/Get-DropVersions.ps1 -BuildId 2525144 -InternalArtifactsAccessToken $(System.AccessToken) -updatedependencies -UseInternalBuild;
+variables:
+- template: /eng/pipelines/variables/core.yml@self
+- name: officialBranches
+  # comma-delimited list of branch names
+  value: nightly
+
+extends:
+  template: /eng/common/templates/1es-official.yml@self
+  parameters:
+    stages:
+    - stage: Build_and_Test
+      displayName: Build and Test
+      jobs:
+      - job: Build_and_Test
+        displayName: Build and Test
+        pool:
+          name: NetCore1ESPool-Internal
+          image: 1es-windows-2022
+          os: windows
+        steps:
+        - powershell: >
+            ./eng/Get-DropVersions.ps1
+            -BuildId 2525144
+            -InternalArtifactsAccessToken $(System.AccessToken)
+            -updatedependencies
+            -UseInternalBuild
+          displayName: Update dependencies and generate dockerfiles
