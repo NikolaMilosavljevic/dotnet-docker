@@ -19,5 +19,5 @@ stages:
         -updatedependencies
         -UseInternalBuild"
       displayName: Update dependencies and dockerfiles
-    - script: cat .\src\runtime\9.0\nanoserver-ltsc2022\amd64\Dockerfile
+    - script: cat ./src/runtime/9.0/nanoserver-ltsc2022/amd64/Dockerfile
       displayName: Print sample dockerfile
