@@ -23,28 +23,22 @@ variables:
   # comma-delimited list of branch names
   value: nightly
 
-extends:
-  template: /eng/common/templates/1es-official.yml@self
-  parameters:
-    stages:
-    - stage: Build_and_Test
-      displayName: Build and Test
-      jobs:
-      - job: Build_and_Test
-        displayName: Build and Test
-        pool:
-          name: NetCore1ESPool-Internal
-          image: 1es-windows-2022
-          os: windows
-        steps:
-        - powershell: >
-            pwsh
-            -Command "./eng/Get-DropVersions.ps1
-            -BuildId 2525144
-            -InternalArtifactsAccessToken $(System.AccessToken)
-            -updatedependencies
-            -UseInternalBuild"
-          displayName: Update dependencies and generate dockerfiles
-        - powershell: >
-            cat .\src\runtime\9.0\nanoserver-ltsc2022\amd64\Dockerfile
-          displayName: Print sample dockerfile
+stages:
+- stage: Internal_build_testing
+  displayName: Internal build testing
+  jobs:
+  - job: Update_dependencies
+    displayName: Update dependencies
+    pool:
+      vmImage: $(defaultLinuxAmd64PoolImage)
+    steps:
+    - powershell: |
+        pwsh
+        -Command "./eng/Get-DropVersions.ps1
+        -BuildId 2525144
+        -InternalArtifactsAccessToken $(System.AccessToken)
+        -updatedependencies
+        -UseInternalBuild"
+      displayName: Update dependencies and dockerfiles
+    - script: cat .\src\runtime\9.0\nanoserver-ltsc2022\amd64\Dockerfile
+      displayName: Print sample dockerfile
