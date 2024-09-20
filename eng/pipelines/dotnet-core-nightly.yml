@@ -11,9 +11,9 @@ stages:
     pool:
       vmImage: $(defaultLinuxAmd64PoolImage)
     steps:
-    - powershell: |
+    - powershell: >
         pwsh
-        -Command "./eng/Get-DropVersions.ps1
+        -Command "$(engPath)/Get-DropVersions.ps1
         -BuildId 2525144
         -InternalArtifactsAccessToken $(System.AccessToken)
         -updatedependencies
