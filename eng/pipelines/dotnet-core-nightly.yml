@@ -1,21 +1,3 @@
-trigger:
-  batch: true
-  branches:
-    include:
-    - nightly
-  paths:
-    include:
-    - manifest.json
-    - manifest.versions.json
-    - src/*
-pr: none
-
-resources:
-  repositories:
-  - repository: InternalVersionsRepo
-    type: github
-    endpoint: dotnet
-    name: dotnet/versions
 
 variables:
 - template: ../common/templates/variables/dotnet/common.yml
