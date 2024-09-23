@@ -1,0 +1,54 @@
+trigger:
+  batch: true
+  branches:
+    include:
+    - nightly
+  paths:
+    include:
+    - manifest.json
+    - manifest.versions.json
+    - src/*
+pr: none
+
+resources:
+  repositories:
+  - repository: InternalVersionsRepo
+    type: github
+    endpoint: dotnet
+    name: dotnet/versions
+
+variables:
+- template: ../common/templates/variables/dotnet/common.yml
+- name: stages
+  value: build
+- name: RunTestInBuildStage
+  value: true
+- name: imageBuilder.pathArgs
+  value: *9.0*
+
+stages:
+- stage: Update_dockerfiles
+  displayName: Update dockerfiles
+  jobs:
+  - job: Update_dockerfiles
+    displayName: Update dockerfiles
+    pool:
+      vmImage: $(defaultLinuxAmd64PoolImage)
+    steps:
+    - powershell: >
+        pwsh
+        -Command "$(engPath)/Get-DropVersions.ps1
+        -BuildId 2525144
+        -InternalArtifactsAccessToken $(System.AccessToken)
+        -updatedependencies
+        -UseInternalBuild"
+      displayName: Update dependencies and dockerfiles
+    - powershell: >
+        $accessToken = "$(System.AccessToken)"
+        $imageBuilderBuildArgs += " --build-arg ACCESSTOKEN='$accessToken'"
+        echo "##vso[task.setvariable variable=imageBuilderBuildArgs]$imageBuilderBuildArgs"
+      displayName: Set Image Builder Build Args
+- template: stages/build-test-publish-repo.yml
+  parameters:
+    internalProjectName: ${{ variables.internalProjectName }}
+    publicProjectName: ${{ variables.publicProjectName }}

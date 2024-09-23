@@ -174,7 +174,7 @@ stages:
 ################################################################################
 # Test Images
 ################################################################################
-- ${{ if and(eq(variables['System.TeamProject'], parameters.internalProjectName), ne(variables['Build.Reason'], 'PullRequest')) }}:
+- ${{ if and(eq(variables['System.TeamProject'], parameters.internalProjectName), ne(variables['Build.Reason'], 'PullRequest'), ne(variables['RunTestInBuildStage'], 'true')) }}:
   - stage: Test
     dependsOn: Post_Build
     condition: "
