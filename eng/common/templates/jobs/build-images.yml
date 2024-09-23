@@ -193,7 +193,7 @@ jobs:
         }
       displayName: Generate SBOMs
       condition: and(succeeded(), ne(variables['BuildImages.builtImages'], ''))
-  - ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:
+  - ${{ if or(eq(variables['Build.Reason'], 'PullRequest'), eq(variables['RunTestInBuildStage'], 'true')) }}:
     - template: /eng/common/templates/jobs/${{ format('../steps/test-images-{0}-client.yml', parameters.dockerClientOS) }}@self
       parameters:
         condition: ne(variables.testScriptPath, '')

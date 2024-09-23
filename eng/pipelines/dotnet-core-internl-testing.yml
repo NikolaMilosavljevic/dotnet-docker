@@ -43,7 +43,7 @@ stages:
         -updatedependencies
         -UseInternalBuild"
       displayName: Update dependencies and dockerfiles
-    - powershell: |
+    - powershell: >
         $accessToken = "$(System.AccessToken)"
         $imageBuilderBuildArgs += " --build-arg ACCESSTOKEN='$accessToken'"
         echo "##vso[task.setvariable variable=imageBuilderBuildArgs]$imageBuilderBuildArgs"
