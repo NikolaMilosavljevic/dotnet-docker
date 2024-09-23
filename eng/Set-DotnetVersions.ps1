@@ -58,7 +58,15 @@ param(
 
     # File containing checksums for each product asset; used to override the behavior of locating the checksums from blob storage accounts.
     [string]
-    $ChecksumsFile
+    $ChecksumsFile,
+
+    # PAT used to access internal AzDO build artifacts
+    [string]
+    $InternalPat,
+
+    # Base Url for internal AzDO build artifacts
+    [string]
+    $InternalBaseUrl
 )
 
 Import-Module -force $PSScriptRoot/DependencyManagement.psm1
@@ -111,6 +119,14 @@ if ($ChecksumsFile) {
 
 if ($UseStableBranding) {
     $updateDepsArgs += "--stable-branding"
+}
+
+if ($InternalArtifactsAccessToken) {
+    $updateDepsArgs += "--internal-pat=$InternalPat"
+}
+
+if ($InternalBaseUrl) {
+    $updateDepsArgs += "--internal-base-url=$InternalBaseUrl"
 }
 
 $versionSourceName = switch ($PSCmdlet.ParameterSetName) {
