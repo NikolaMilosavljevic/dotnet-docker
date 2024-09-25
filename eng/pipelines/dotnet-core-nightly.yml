@@ -19,19 +19,13 @@ resources:
 
 variables:
 - template: ../common/templates/variables/dotnet/common.yml
-- name: stages
-  value: build
-- name: RunTestInBuildStage
-  value: true
-- name: imageBuilder.pathArgs
-  value: *9.0*
 
 stages:
-- stage: Update_dockerfiles
-  displayName: Update dockerfiles
+- stage: Internal_build_testing
+  displayName: Internal build testing
   jobs:
-  - job: Update_dockerfiles
-    displayName: Update dockerfiles
+  - job: Update_dependencies
+    displayName: Update dependencies
     pool:
       vmImage: $(defaultLinuxAmd64PoolImage)
     steps:
@@ -43,12 +37,5 @@ stages:
         -updatedependencies
         -UseInternalBuild"
       displayName: Update dependencies and dockerfiles
-    - powershell: >
-        $accessToken = "$(System.AccessToken)"
-        $imageBuilderBuildArgs += " --build-arg ACCESSTOKEN='$accessToken'"
-        echo "##vso[task.setvariable variable=imageBuilderBuildArgs]$imageBuilderBuildArgs"
-      displayName: Set Image Builder Build Args
-- template: stages/build-test-publish-repo.yml
-  parameters:
-    internalProjectName: ${{ variables.internalProjectName }}
-    publicProjectName: ${{ variables.publicProjectName }}
+    - script: cat ./src/runtime/9.0/nanoserver-ltsc2022/amd64/Dockerfile
+      displayName: Print sample dockerfile
