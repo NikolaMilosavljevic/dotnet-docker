@@ -18,24 +18,27 @@ resources:
     name: dotnet/versions
 
 variables:
-- template: ../common/templates/variables/dotnet/common.yml
+- template: /eng/pipelines/variables/internal-core.yml@self
 
-stages:
-- stage: Internal_build_testing
-  displayName: Internal build testing
-  jobs:
-  - job: Update_dependencies
-    displayName: Update dependencies
-    pool:
-      vmImage: $(defaultWindows1809PoolImage)
-    steps:
-    - powershell: >
-        pwsh
-        -Command "$(engPath)/Get-DropVersions.ps1
-        -BuildId 2525144
-        -InternalArtifactsAccessToken $(System.AccessToken)
-        -updatedependencies
-        -UseInternalBuild"
-      displayName: Update dependencies and dockerfiles
-    - script: cat ./src/runtime/9.0/nanoserver-ltsc2022/amd64/Dockerfile
-      displayName: Print sample dockerfile
+extends:
+  template: /eng/common/templates/1es-official.yml@self
+  parameters:
+    stages:
+    - stage: Internal_build_testing
+      displayName: Internal build testing
+      jobs:
+      - job: Update_dependencies
+        displayName: Update dependencies
+        pool:
+          vmImage: $(defaultWindows1809PoolImage)
+        steps:
+        - powershell: >
+            pwsh
+            -Command "$(engPath)/Get-DropVersions.ps1
+            -BuildId 2525144
+            -InternalArtifactsAccessToken $(System.AccessToken)
+            -updatedependencies
+            -UseInternalBuild"
+          displayName: Update dependencies and dockerfiles
+        - script: cat ./src/runtime/9.0/nanoserver-ltsc2022/amd64/Dockerfile
+          displayName: Print sample dockerfile
