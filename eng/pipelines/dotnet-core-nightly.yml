@@ -27,7 +27,7 @@ stages:
   - job: Update_dependencies
     displayName: Update dependencies
     pool:
-      vmImage: $(defaultLinuxAmd64PoolImage)
+      vmImage: $(defaultWindows1809PoolImage)
     steps:
     - powershell: >
         pwsh
